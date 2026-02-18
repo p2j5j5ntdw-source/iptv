@@ -1,1 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M3U Merger</title>
+</head>
+<body>
+    <script type="text/javascript">
+        // قائمة بملفات القنوات (يمكنك تعديلها بإضافة المزيد)
+        const playlistFiles = [
+            'channels/saudi.m3u',
+            'channels/egypt.m3u',
+            'channels/usa.m3u'
+        ];
 
+        // دالة لجلب محتوى ملف M3U
+        async function fetchPlaylist(file) {
+            const response = await fetch(file);
+            return await response.text();
+        }
+
+        // دالة لدمج القوائم وإزالة التكرار في الرؤوس
+        async function mergePlaylists() {
+            let mergedContent = '#EXTM3U\n'; // رأس الملف الموحد
+
+            for (const file of playlistFiles) {
+                try {
+                    const content = await fetchPlaylist(file);
+                    // نأخذ المحتوى بعد السطر الأول (#EXTM3U) لتجنب تكرار الرأس
+                    const lines = content.split('\n');
+                    for (let i = 1; i < lines.length; i++) {
+                        mergedContent += lines[i] + '\n';
+                    }
+                } catch (error) {
+                    console.error(`خطأ في تحميل الملف ${file}:`, error);
+                }
+            }
+            return mergedContent;
+        }
+
+        // إذا تم طلب الملف من تطبيق IPTV (أو من المتصفح لعرضه)
+        window.onload = async function() {
+            // التحقق إذا كان الطلب هو للحصول على ملف M3U
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('m3u')) {
+                const merged = await mergePlaylists();
+                document.body.innerText = merged; // نعرض المحتوى كنص عادي
+            } else {
+                document.body.innerHTML = '<h2>رابط الدمج جاهز.</h2><p>استخدم الرابط: <code>' + window.location.href + '?m3u</code></p>';
+            }
+        }
+    </script>
+</body>
+</html>
